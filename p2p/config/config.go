@@ -35,7 +35,6 @@ type Config struct {
 	PrivateKey      string        `mapstructure:"private-key"`
 	FastSync        bool          `mapstructure:"fast-sync"`
 	TCPPort         int           `mapstructure:"tcp-port"`
-	NodeID          string        `mapstructure:"node-id"`
 	DialTimeout     time.Duration `mapstructure:"dial-timeout"`
 	ConnKeepAlive   time.Duration `mapstructure:"conn-keepalive"`
 	NetworkID       uint32        `mapstructure:"network-id"`
@@ -87,7 +86,6 @@ func DefaultConfig() Config {
 	return Config{
 		FastSync:        true,
 		TCPPort:         7513,
-		NodeID:          "",
 		DialTimeout:     duration("1m"),
 		ConnKeepAlive:   duration("48h"),
 		NetworkID:       0,
