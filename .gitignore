@@ -1,0 +1,26 @@
+# See http://help.github.com/ignore-files/ for more about ignoring files.
+
+/tmp
+*/**/*un~
+*/**/*.test
+*/**/temp.js
+.DS_Store
+*/**/.DS_Store
+/build
+
+#*
+.#*
+*#
+*~
+.project
+.settings
+.idea
+.vagrant
+
+/go-spacemesh
+/cp.out
+/cover.out
+/cover-all.out
+*/**/cover.out
+
+database/data
