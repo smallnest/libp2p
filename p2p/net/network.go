@@ -13,7 +13,7 @@ import (
 	"github.com/smallnest/libp2p/p2p/delimited"
 	"github.com/smallnest/libp2p/p2p/node"
 	"github.com/smallnest/libp2p/p2p/pb"
-	"github.com/smallnest/log"
+	"github.com/smallnest/libp2p/log"
 )
 
 // DefaultQueueCount is the default number of messages queue we hold. messages queues are used to serialize message receiving

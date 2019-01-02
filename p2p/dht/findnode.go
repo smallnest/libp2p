@@ -11,7 +11,7 @@ import (
 	"github.com/smallnest/libp2p/p2p/dht/pb"
 	"github.com/smallnest/libp2p/p2p/node"
 	"github.com/smallnest/libp2p/p2p/service"
-	"github.com/smallnest/log"
+	"github.com/smallnest/libp2p/log"
 )
 
 // todo: should be a kad param and configurable

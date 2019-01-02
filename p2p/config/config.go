@@ -3,7 +3,7 @@ package config
 import (
 	"time"
 
-	"github.com/smallnest/log"
+	"github.com/smallnest/libp2p/log"
 )
 
 const (

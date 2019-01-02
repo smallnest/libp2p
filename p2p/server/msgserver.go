@@ -9,7 +9,7 @@ import (
 
 	"github.com/smallnest/libp2p/crypto"
 	"github.com/smallnest/libp2p/p2p/service"
-	"github.com/smallnest/log"
+	"github.com/smallnest/libp2p/log"
 )
 
 type MessageType uint32

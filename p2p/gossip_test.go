@@ -11,7 +11,7 @@ import (
 	"github.com/smallnest/libp2p/p2p/config"
 	"github.com/smallnest/libp2p/p2p/node"
 	"github.com/smallnest/libp2p/p2p/service"
-	"github.com/smallnest/log"
+	"github.com/smallnest/libp2p/log"
 	"github.com/stretchr/testify/assert"
 )
 

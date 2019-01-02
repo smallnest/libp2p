@@ -7,7 +7,7 @@ import (
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcutil/base58"
-	"github.com/smallnest/log"
+	"github.com/smallnest/libp2p/log"
 )
 
 //TODO: check if caching strings worth it.

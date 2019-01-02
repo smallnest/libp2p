@@ -25,7 +25,7 @@ import (
 	"github.com/smallnest/libp2p/p2p/service"
 	"github.com/smallnest/libp2p/timesync"
 
-	"github.com/smallnest/log"
+	"github.com/smallnest/libp2p/log"
 )
 
 // ConnectingTimeout is the timeout we wait when trying to connect a neighborhood

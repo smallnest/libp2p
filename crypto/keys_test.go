@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/smallnest/log"
+	"github.com/smallnest/libp2p/log"
 	"github.com/stretchr/testify/assert"
 )
 

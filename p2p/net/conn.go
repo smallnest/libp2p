@@ -12,7 +12,7 @@ import (
 	"github.com/smallnest/libp2p/crypto"
 	"github.com/smallnest/libp2p/p2p/net/wire"
 
-	"github.com/smallnest/log"
+	"github.com/smallnest/libp2p/log"
 )
 
 var (

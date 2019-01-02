@@ -3,7 +3,7 @@ package node
 import (
 	"github.com/smallnest/libp2p/crypto"
 	"github.com/smallnest/libp2p/p2p/config"
-	"github.com/smallnest/log"
+	"github.com/smallnest/libp2p/log"
 )
 
 // LocalNode implementation.

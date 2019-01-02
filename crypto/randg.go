@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 
-	"github.com/smallnest/log"
+	"github.com/smallnest/libp2p/log"
 )
 
 // GetRandomBytesToBuffer puts n random bytes using go crypto.rand into provided buff slice.

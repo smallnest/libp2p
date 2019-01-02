@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/smallnest/libp2p/crypto"
-	"github.com/smallnest/log"
+	"github.com/smallnest/libp2p/log"
 )
 
 // NetworkSession is an authenticated network session between 2 peers.
