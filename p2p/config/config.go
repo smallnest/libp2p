@@ -33,7 +33,7 @@ type Config struct {
 	NodeID          string        `mapstructure:"node-id"`
 	DialTimeout     time.Duration `mapstructure:"dial-timeout"`
 	ConnKeepAlive   time.Duration `mapstructure:"conn-keepalive"`
-	NetworkID       int8          `mapstructure:"network-id"`
+	NetworkID       uint32        `mapstructure:"network-id"`
 	ResponseTimeout time.Duration `mapstructure:"response-timeout"`
 	SwarmConfig     SwarmConfig   `mapstructure:"swarm"`
 	TimeConfig      TimeConfig
@@ -85,7 +85,7 @@ func DefaultConfig() Config {
 		NodeID:          "",
 		DialTimeout:     duration("1m"),
 		ConnKeepAlive:   duration("48h"),
-		NetworkID:       TestNet,
+		NetworkID:       0,
 		ResponseTimeout: duration("15s"),
 		SwarmConfig:     SwarmConfigValues,
 		TimeConfig:      TimeConfigValues,
