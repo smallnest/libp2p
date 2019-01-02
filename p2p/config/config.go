@@ -20,20 +20,17 @@ func init() {
 func duration(duration string) (dur time.Duration) {
 	dur, err := time.ParseDuration(duration)
 	if err != nil {
-		log.Error("Could not parse duration string returning 0, error:", err)
+		log.Error("could not parse duration string returning 0, error:", err)
 	}
 	return dur
 }
 
 // Config defines the configuration options for the Spacemesh peer-to-peer networking layer
 type Config struct {
-	ConfigFilePath string `mapstructure:"config_file_path"`
-	DataFilePath   string `mapstructure:"data_file_path"`
-
+	PrivateKey      string        `mapstructure:"private-key"`
 	FastSync        bool          `mapstructure:"fast-sync"`
 	TCPPort         int           `mapstructure:"tcp-port"`
 	NodeID          string        `mapstructure:"node-id"`
-	NewNode         bool          `mapstructure:"new-node"`
 	DialTimeout     time.Duration `mapstructure:"dial-timeout"`
 	ConnKeepAlive   time.Duration `mapstructure:"conn-keepalive"`
 	NetworkID       int8          `mapstructure:"network-id"`
@@ -83,12 +80,9 @@ func DefaultConfig() Config {
 	}
 
 	return Config{
-		ConfigFilePath:  "config",
-		DataFilePath:    "./data",
 		FastSync:        true,
 		TCPPort:         7513,
 		NodeID:          "",
-		NewNode:         false,
 		DialTimeout:     duration("1m"),
 		ConnKeepAlive:   duration("48h"),
 		NetworkID:       TestNet,

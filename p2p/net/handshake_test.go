@@ -15,9 +15,9 @@ import (
 func TestGenerateHandshakeRequestData(t *testing.T) {
 	port := 0
 	address := fmt.Sprintf("0.0.0.0:%d", port)
-	localNode, err := node.NewLocalNode(config.ConfigValues, address, false)
+	localNode, err := node.NewNodeIdentity(config.ConfigValues, address)
 	assert.NoError(t, err, "should be able to create localnode")
-	remoteNode, err := node.NewLocalNode(config.ConfigValues, address, false)
+	remoteNode, err := node.NewNodeIdentity(config.ConfigValues, address)
 	assert.NoError(t, err, "should be able to create localnode")
 	con := NewConnectionMock(remoteNode.PublicKey())
 	remoteNet, _ := NewNet(config.ConfigValues, remoteNode)

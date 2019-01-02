@@ -11,6 +11,7 @@ import (
 	"github.com/smallnest/libp2p/p2p/config"
 	"github.com/smallnest/libp2p/p2p/node"
 	"github.com/smallnest/libp2p/p2p/service"
+	"github.com/smallnest/log"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,7 +35,7 @@ func TestGossip(t *testing.T) {
 			for k := 0; k < bootnodes[i]; k++ {
 				bn := p2pTestInstance(t, config.DefaultConfig())
 				bn.RegisterProtocol(exampleProtocol)
-				bn.lNode.Info("This is a bootnode - %v", bn.lNode.Node.String())
+				log.Infof("this is a bootnode - %v", bn.lNode.Node.String())
 				bnarr = append(bnarr, node.StringFromNode(bn.lNode.Node))
 
 			}

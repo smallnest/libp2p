@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/spacemeshos/go-spacemesh/crypto"
-	"github.com/spacemeshos/go-spacemesh/p2p/config"
+	"github.com/smallnest/libp2p/crypto"
+	"github.com/smallnest/libp2p/p2p/config"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -303,7 +303,7 @@ func (rt *routingTableImpl) randomPeers(qty int) []node.Node {
 func (rt *routingTableImpl) update(p node.Node, cb chan struct{}) {
 
 	if rt.local.Equals(p.DhtID()) {
-		log.Warning("Ignoring attempt to add local node to the routing table")
+		log.Warn("Ignoring attempt to add local node to the routing table")
 		return
 	}
 
@@ -324,7 +324,7 @@ func (rt *routingTableImpl) update(p node.Node, cb chan struct{}) {
 	}
 
 	if p.Address() == "" {
-		log.Errorf("Updated non-existing peer without an address pubkey: %v", p.PublicKey().String())
+		log.Errorf("updated non-existing peer without an address pubkey: %v", p.PublicKey().String())
 		return
 	}
 
@@ -388,11 +388,11 @@ func (rt *routingTableImpl) onFindReq(r PeerByIDRequest) {
 	}
 
 	if len(peers) == 0 || !peers[0].DhtID().Equals(r.ID) {
-		log.Debug("Did not find %s in the routing table", r.ID.Pretty())
+		log.Debugf("did not find %s in the routing table", r.ID.Pretty())
 		go func() { r.Callback <- &PeerOpResult{} }()
 	} else {
 		p := peers[0]
-		log.Debug("Found %s in the routing table", p.Pretty())
+		log.Debugf("found %s in the routing table", p.Pretty())
 		go func() { r.Callback <- &PeerOpResult{peers[0]} }()
 	}
 }

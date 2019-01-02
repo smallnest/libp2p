@@ -111,7 +111,7 @@ func (cp *ConnectionPool) handleNewConnection(rPub crypto.PublicKey, newConn net
 		srcPub = rPub.String()
 		dstPub = cp.localPub.String()
 	}
-	log.Info("new connection %s -> %s. id=%s, sessionID=%v", srcPub, dstPub, newConn.ID(), newConn.Session().ID())
+	log.Infof("new connection %s -> %s. id=%s, sessionID=%v", srcPub, dstPub, newConn.ID(), newConn.Session().ID())
 	// check if there isn't already same connection (possible if the second connection is a Remote connection)
 	curConn, ok := cp.connections[rPub.String()]
 	if ok {
@@ -122,14 +122,14 @@ func (cp *ConnectionPool) handleNewConnection(rPub crypto.PublicKey, newConn net
 		if res <= 0 { // newConn >= curConn
 			if res == 0 { // newConn == curConn
 				// TODO Is it a potential threat (session hijacking)? Should we keep the existing connection?
-				log.Warn("new connection was created with same session ID as an existing connection, keeping the new connection (assuming existing connection is stale). existing session ID=%v, new session ID=%v, remote=%s", curConn.Session().ID(), newConn.Session().ID(), rPub)
+				log.Warnf("new connection was created with same session ID as an existing connection, keeping the new connection (assuming existing connection is stale). existing session ID=%v, new session ID=%v, remote=%s", curConn.Session().ID(), newConn.Session().ID(), rPub)
 			} else {
-				log.Info("connection created while connection already exists between peers, closing existing connection. existing session ID=%v, new session ID=%v, remote=%s", curConn.Session().ID(), newConn.Session().ID(), rPub)
+				log.Infof("connection created while connection already exists between peers, closing existing connection. existing session ID=%v, new session ID=%v, remote=%s", curConn.Session().ID(), newConn.Session().ID(), rPub)
 			}
 			closeConn = curConn
 			cp.connections[rPub.String()] = newConn
 		} else { // newConn < curConn
-			log.Info("connection created while connection already exists between peers, closing new connection. existing session ID=%v, new session ID=%v, remote=%s", curConn.Session().ID(), newConn.Session().ID(), rPub)
+			log.Infof("connection created while connection already exists between peers, closing new connection. existing session ID=%v, new session ID=%v, remote=%s", curConn.Session().ID(), newConn.Session().ID(), rPub)
 			closeConn = newConn
 		}
 		cp.connMutex.Unlock()
@@ -152,7 +152,7 @@ func (cp *ConnectionPool) handleClosedConnection(conn net.Connection) {
 	if conn.Session() == nil {
 		return
 	}
-	//cp.net.Logger().Debug("connection %v with %v was closed (sessionID: %v)", conn.String(), conn.RemotePublicKey().Pretty(), conn.Session().ID())
+	log.Debugf("connection %v with %v was closed (sessionID: %v)", conn.String(), conn.RemotePublicKey().Pretty(), conn.Session().ID())
 	cp.connMutex.Lock()
 	rPub := conn.RemotePublicKey().String()
 	cur, ok := cp.connections[rPub]

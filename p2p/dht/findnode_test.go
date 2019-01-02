@@ -1,19 +1,13 @@
 package dht
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/smallnest/libp2p/p2p/config"
 	"github.com/smallnest/libp2p/p2p/node"
 	"github.com/smallnest/libp2p/p2p/service"
-	"github.com/smallnest/log"
 	"github.com/stretchr/testify/assert"
 )
-
-func getTestLogger(test string, args ...interface{}) log.Log {
-	return log.New(fmt.Sprintf(test, args...), "", "")
-}
 
 func TestFindNodeProtocol_FindNode(t *testing.T) {
 
@@ -21,11 +15,11 @@ func TestFindNodeProtocol_FindNode(t *testing.T) {
 	sim := service.NewSimulator()
 
 	n1 := sim.NewNode()
-	rt1 := NewRoutingTable(cfg.SwarmConfig.RoutingTableBucketSize, n1.DhtID(), getTestLogger("FindNode - ").Logger)
+	rt1 := NewRoutingTable(cfg.SwarmConfig.RoutingTableBucketSize, n1.DhtID())
 	fnd1 := newFindNodeProtocol(n1, rt1)
 
 	n2 := sim.NewNode()
-	rt2 := NewRoutingTable(cfg.SwarmConfig.RoutingTableBucketSize, n2.DhtID(), getTestLogger("FindNode - ").Logger)
+	rt2 := NewRoutingTable(cfg.SwarmConfig.RoutingTableBucketSize, n2.DhtID())
 	_ = newFindNodeProtocol(n2, rt2)
 
 	idarr, err := fnd1.FindNode(n2.Node, node.GenerateRandomNodeData().String())
@@ -41,11 +35,11 @@ func TestFindNodeProtocol_FindNode2(t *testing.T) {
 	sim := service.NewSimulator()
 
 	n1 := sim.NewNode()
-	rt1 := NewRoutingTable(cfg.SwarmConfig.RoutingTableBucketSize, n1.DhtID(), getTestLogger("FindNode - ").Logger)
+	rt1 := NewRoutingTable(cfg.SwarmConfig.RoutingTableBucketSize, n1.DhtID())
 	fnd1 := newFindNodeProtocol(n1, rt1)
 
 	n2 := sim.NewNode()
-	rt2 := NewRoutingTable(cfg.SwarmConfig.RoutingTableBucketSize, n2.DhtID(), getTestLogger("FindNode - ").Logger)
+	rt2 := NewRoutingTable(cfg.SwarmConfig.RoutingTableBucketSize, n2.DhtID())
 	fnd2 := newFindNodeProtocol(n2, rt2)
 
 	fnd2.rt.Update(randnode)

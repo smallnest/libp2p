@@ -6,16 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/smallnest/log"
-	"gopkg.in/op/go-logging.v1"
-
 	"github.com/smallnest/libp2p/p2p/node"
 	"github.com/stretchr/testify/assert"
 )
-
-func GetTestLogger(name string) *logging.Logger {
-	return log.New(name, "", "").Logger
-}
 
 func TestTableCallbacks(t *testing.T) {
 
@@ -25,9 +18,7 @@ func TestTableCallbacks(t *testing.T) {
 
 	nodes := node.GenerateRandomNodesData(n)
 
-	tlog := GetTestLogger(localID.Pretty())
-
-	rt := NewRoutingTable(20, localID, tlog)
+	rt := NewRoutingTable(20, localID)
 
 	for i := 0; i < n; i++ {
 		rt.Update(nodes[i])
@@ -55,7 +46,7 @@ func TestTableUpdate(t *testing.T) {
 
 	localID := local.DhtID()
 
-	rt := NewRoutingTable(10, localID, GetTestLogger(localID.Pretty()))
+	rt := NewRoutingTable(10, localID)
 
 	nodes := node.GenerateRandomNodesData(n)
 
@@ -94,7 +85,7 @@ func TestTableFind(t *testing.T) {
 
 	localID := local.DhtID()
 
-	rt := NewRoutingTable(10, localID, GetTestLogger(localID.Pretty()))
+	rt := NewRoutingTable(10, localID)
 
 	nodes := node.GenerateRandomNodesData(n)
 
@@ -141,7 +132,7 @@ func TestTableFindCount(t *testing.T) {
 	local := node.GenerateRandomNodeData()
 
 	localID := local.DhtID()
-	rt := NewRoutingTable(10, localID, GetTestLogger(localID.Pretty()))
+	rt := NewRoutingTable(10, localID)
 	nodes := node.GenerateRandomNodesData(n)
 	for i := 0; i < n; i++ {
 		rt.Update(nodes[i])
@@ -170,7 +161,7 @@ func TestTableMultiThreaded(t *testing.T) {
 
 	local := node.GenerateRandomNodeData()
 	localID := local.DhtID()
-	rt := NewRoutingTable(10, localID, GetTestLogger(localID.Pretty()))
+	rt := NewRoutingTable(10, localID)
 	nodes := node.GenerateRandomNodesData(n)
 
 	go func() {
@@ -204,7 +195,7 @@ func TestRoutingTableImpl_SelectPeersDuplicates(t *testing.T) {
 		local := node.GenerateRandomNodeData()
 		localID := local.DhtID()
 
-		rt := NewRoutingTable(10, localID, GetTestLogger(localID.Pretty()))
+		rt := NewRoutingTable(10, localID)
 
 		fillRT := func() {
 			nodes := node.GenerateRandomNodesData(n)
@@ -247,7 +238,7 @@ func TestRoutingTableImpl_SelectPeers_EnoughPeers(t *testing.T) {
 		local := node.GenerateRandomNodeData()
 		localID := local.DhtID()
 
-		rt := NewRoutingTable(25, localID, GetTestLogger(localID.Pretty()))
+		rt := NewRoutingTable(25, localID)
 
 		ids[local.String()] = local
 		sids[local.String()] = rt
@@ -287,14 +278,14 @@ func TestRoutingTableImpl_SelectPeers_EnoughPeers(t *testing.T) {
 func TestRoutingTableImpl_Print(t *testing.T) {
 	local := node.GenerateRandomNodeData()
 	localID := local.DhtID()
-	rt := NewRoutingTable(10, localID, GetTestLogger(localID.Pretty()))
+	rt := NewRoutingTable(10, localID)
 	rt.Print()
 }
 
 func TestRoutingTableImpl_Remove(t *testing.T) {
 	local := node.GenerateRandomNodeData()
 	localID := local.DhtID()
-	rt := NewRoutingTable(10, localID, GetTestLogger(localID.Pretty()))
+	rt := NewRoutingTable(10, localID)
 
 	rnode := node.GenerateRandomNodeData()
 
@@ -317,7 +308,7 @@ func BenchmarkUpdates(b *testing.B) {
 	local := node.GenerateRandomNodeData()
 
 	localID := local.DhtID()
-	rt := NewRoutingTable(10, localID, GetTestLogger(localID.Pretty()))
+	rt := NewRoutingTable(10, localID)
 	nodes := node.GenerateRandomNodesData(b.N)
 
 	b.StartTimer()
@@ -332,7 +323,7 @@ func BenchmarkFinds(b *testing.B) {
 	local := node.GenerateRandomNodeData()
 
 	localID := local.DhtID()
-	rt := NewRoutingTable(10, localID, GetTestLogger(localID.Pretty()))
+	rt := NewRoutingTable(10, localID)
 	nodes := node.GenerateRandomNodesData(b.N)
 
 	for i := 0; i < b.N; i++ {

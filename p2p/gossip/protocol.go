@@ -115,11 +115,11 @@ func (p *peer) send(msg []byte, checksum hash) error {
 	go func() {
 		err := p.net.SendMessage(p.pubKey.String(), ProtocolName, msg)
 		if err != nil {
-			log.Info("Gossip protocol failed to send msg (calcHash %d) to peer %v, first attempt. err=%v", checksum, p.pubKey, err)
+			log.Infof("gossip protocol failed to send msg (calcHash %d) to peer %v, first attempt. err=%v", checksum, p.pubKey, err)
 			// doing one retry before giving up
 			err = p.net.SendMessage(p.pubKey.String(), "", msg)
 			if err != nil {
-				log.Info("Gossip protocol failed to send msg (calcHash %d) to peer %v, second attempt. err=%v", checksum, p.pubKey, err)
+				log.Infof("gossip protocol failed to send msg (calcHash %d) to peer %v, second attempt. err=%v", checksum, p.pubKey, err)
 				return
 			}
 		}
@@ -145,7 +145,7 @@ func (prot *Protocol) propagateMessage(msg []byte, h hash) {
 	prot.peersMutex.RLock()
 	for p := range prot.peers {
 		peer := prot.peers[p]
-		log.Debug("sending message to peer %v, hash %d", peer.pubKey, h)
+		log.Debugf("sending message to peer %v, hash %d", peer.pubKey, h)
 		peer.send(msg, h) // non blocking
 	}
 	prot.peersMutex.RUnlock()
@@ -156,12 +156,12 @@ func (prot *Protocol) validateMessage(msg *pb.ProtocolMessage) error {
 	err := message.AuthAuthor(msg)
 
 	if err != nil {
-		log.Error("fail to authorize gossip message, err %v", err)
+		log.Errorf("fail to authorize gossip message, err %v", err)
 		return err
 	}
 
 	if msg.Metadata.ClientVersion != protocolVer {
-		log.Error("fail to validate message's protocol version when validating gossip message, err %v", err)
+		log.Errorf("fail to validate message's protocol version when validating gossip message, err %v", err)
 		return err
 	}
 	return nil
@@ -169,7 +169,7 @@ func (prot *Protocol) validateMessage(msg *pb.ProtocolMessage) error {
 
 // Broadcast is the actual broadcast procedure, loop on peers and add the message to their queues
 func (prot *Protocol) Broadcast(payload []byte, nextProt string) error {
-	log.Debug("Broadcasting message from type %s", nextProt)
+	log.Debugf("broadcasting message from type %s", nextProt)
 	// add gossip header
 	header := &pb.Metadata{
 		NextProtocol:  nextProt,
@@ -186,14 +186,14 @@ func (prot *Protocol) Broadcast(payload []byte, nextProt string) error {
 
 	bin, err := proto.Marshal(msg)
 	if err != nil {
-		log.Error("failed to marshal message when generating gossip header, err %v", err)
+		log.Errorf("failed to marshal message when generating gossip header, err %v", err)
 		return err
 
 	}
 
 	sign, err2 := prot.signer.Sign(bin)
 	if err2 != nil {
-		log.Error("failed to Sign header when generating gossip header, err %v", err)
+		log.Errorf("failed to Sign header when generating gossip header, err %v", err)
 		return err
 	}
 
@@ -248,19 +248,19 @@ func (prot *Protocol) handleRelayMessage(msgB []byte) error {
 	if prot.isOldMessage(hash) {
 		// todo : - have some more metrics for termination
 		// todo	: - maybe tell the peer weg ot this message already?
-		log.Debug("got old message, hash %d", hash)
+		log.Debugf("got old message, hash %d", hash)
 	} else {
 
 		msg := &pb.ProtocolMessage{}
 		err := proto.Unmarshal(msgB, msg)
 		if err != nil {
-			log.Error("failed to unmarshal when handling relay message, err %v", err)
+			log.Errorf("failed to unmarshal when handling relay message, err %v", err)
 			return err
 		}
 
 		err = prot.validateMessage(msg)
 		if err != nil {
-			log.Error("failed to validate message when handling relay message, err %v", err)
+			log.Errorf("failed to validate message when handling relay message, err %v", err)
 			return err
 		}
 
@@ -276,7 +276,7 @@ func (prot *Protocol) handleRelayMessage(msgB []byte) error {
 
 		authKey, err := crypto.NewPublicKey(msg.Metadata.AuthPubKey)
 		if err != nil {
-			log.Error("failed to decode the auth public key when handling relay message, err %v", err)
+			log.Errorf("failed to decode the auth public key when handling relay message, err %v", err)
 			return err
 		}
 
@@ -312,7 +312,7 @@ loop:
 			break loop
 		}
 	}
-	log.Warning("Gossip protocol event loop stopped. err: %v", err)
+	log.Warnf("gossip protocol event loop stopped. err: %v", err)
 }
 
 // peersCount returns the number of peers know to the protocol, used for testing only

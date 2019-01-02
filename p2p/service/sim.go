@@ -169,7 +169,7 @@ func (sn *Node) sendMessageImpl(nodeID string, protocol string, payload Data) er
 		sn.sim.updateNode(nodeID, sn)
 		return nil
 	}
-	log.Debug("%v >> %v (%v)", sn.Node.PublicKey(), nodeID, payload)
+	log.Debugf("%v >> %v (%v)", sn.Node.PublicKey(), nodeID, payload)
 	return errors.New("could not find " + protocol + " handler for node: " + nodeID)
 }
 
@@ -182,7 +182,7 @@ func (sn *Node) Broadcast(protocol string, payload []byte) error {
 		}
 	}
 	sn.sim.mutex.RUnlock()
-	log.Debug("%v >> All ( Gossip ) (%v)", sn.Node.PublicKey(), payload)
+	log.Debugf("%v >> All ( Gossip ) (%v)", sn.Node.PublicKey(), payload)
 	return nil
 }
 

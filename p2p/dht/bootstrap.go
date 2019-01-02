@@ -40,7 +40,7 @@ var (
 // while all the nodes that receive our query will add us to their routing tables and send us as response to a `FindNode`.
 func (d *KadDHT) Bootstrap(ctx context.Context) error {
 
-	log.Debug("Starting node bootstrap ", d.local.String())
+	log.Debug("starting node bootstrap ", d.local.String())
 
 	alpha := d.config.RoutingTableAlpha
 	c := d.config.RandomConnections
@@ -58,14 +58,14 @@ func (d *KadDHT) Bootstrap(ctx context.Context) error {
 		}
 		d.rt.Update(nd)
 		bn++
-		log.Info("added new bootstrap node %v", nd)
+		log.Infof("added new bootstrap node %v", nd)
 	}
 
 	if bn == 0 {
 		return ErrConnectToBootNode
 	}
 
-	log.Debug("Lookup using %d preloaded bootnodes ", bn)
+	log.Debug("lookup using %d preloaded bootnodes ", bn)
 
 	ctx, _ = context.WithTimeout(ctx, BootstrapTimeout)
 	err := d.tryBoot(ctx, c)
@@ -118,7 +118,7 @@ loop:
 				}
 				gotpeers = true
 			} else {
-				log.Warning("%d lookup didn't bootstrap the routing table. RT now has %d peers", tries, size)
+				log.Warnf("%d lookup didn't bootstrap the routing table. RT now has %d peers", tries, size)
 			}
 
 			time.Sleep(LookupIntervals)

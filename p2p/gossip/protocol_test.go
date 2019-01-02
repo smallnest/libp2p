@@ -11,7 +11,6 @@ import (
 	"github.com/smallnest/libp2p/p2p/node"
 	"github.com/smallnest/libp2p/p2p/pb"
 	"github.com/smallnest/libp2p/p2p/service"
-	"github.com/smallnest/log"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -210,7 +209,7 @@ lop:
 //todo : more unit tests
 
 func TestNeighborhood_AddIncomingPeer(t *testing.T) {
-	n := NewProtocol(config.DefaultConfig().SwarmConfig, newMockBaseNetwork(), newTestSigner(t), log.New("tesT", "", ""))
+	n := NewProtocol(config.DefaultConfig().SwarmConfig, newMockBaseNetwork(), newTestSigner(t))
 	n.Start()
 	_, pub, _ := crypto.GenerateKeyPair()
 	n.addPeer(pub)
@@ -232,7 +231,7 @@ func signedMessage(t testing.TB, s signer, message *pb.ProtocolMessage) service.
 
 func TestNeighborhood_Relay(t *testing.T) {
 	net := newMockBaseNetwork()
-	n := NewProtocol(config.DefaultConfig().SwarmConfig, net, newTestSigner(t), log.New("tesT", "", ""))
+	n := NewProtocol(config.DefaultConfig().SwarmConfig, net, newTestSigner(t))
 	n.Start()
 
 	addPeersAndTest(t, 20, n, net, true)
@@ -262,7 +261,7 @@ func TestNeighborhood_Relay(t *testing.T) {
 
 func TestNeighborhood_Broadcast(t *testing.T) {
 	net := newMockBaseNetwork()
-	n := NewProtocol(config.DefaultConfig().SwarmConfig, net, newTestSigner(t), log.New("tesT", "", ""))
+	n := NewProtocol(config.DefaultConfig().SwarmConfig, net, newTestSigner(t))
 	n.Start()
 	addPeersAndTest(t, 20, n, net, true)
 	net.msgwg.Add(20)
@@ -275,7 +274,7 @@ func TestNeighborhood_Broadcast(t *testing.T) {
 
 func TestNeighborhood_Relay2(t *testing.T) {
 	net := newMockBaseNetwork()
-	n := NewProtocol(config.DefaultConfig().SwarmConfig, net, newTestSigner(t), log.New("tesT", "", ""))
+	n := NewProtocol(config.DefaultConfig().SwarmConfig, net, newTestSigner(t))
 	n.Start()
 
 	signer := newTestSigner(t)
@@ -306,7 +305,7 @@ func TestNeighborhood_Relay2(t *testing.T) {
 
 func TestNeighborhood_Broadcast2(t *testing.T) {
 	net := newMockBaseNetwork()
-	n := NewProtocol(config.DefaultConfig().SwarmConfig, net, newTestSigner(t), log.New("tesT", "", ""))
+	n := NewProtocol(config.DefaultConfig().SwarmConfig, net, newTestSigner(t))
 	n.Start()
 
 	msgB := newTestSignedMessageData(t, newTestSigner(t))
@@ -330,7 +329,7 @@ func TestNeighborhood_Broadcast3(t *testing.T) {
 	// todo : Fix this test, because the first message is broadcasted `Broadcast` attaches metadata to it with the current authoring timestamp
 	// to test that the the next message doesn't get processed by the protocol we must create an exact copy of the message produced at `Broadcast`
 	net := newMockBaseNetwork()
-	n := NewProtocol(config.DefaultConfig().SwarmConfig, net, newTestSigner(t), log.New("tesT", "", ""))
+	n := NewProtocol(config.DefaultConfig().SwarmConfig, net, newTestSigner(t))
 	n.Start()
 
 	addPeersAndTest(t, 20, n, net, true)
@@ -350,7 +349,7 @@ func TestNeighborhood_Broadcast3(t *testing.T) {
 
 func TestNeighborhood_Relay3(t *testing.T) {
 	net := newMockBaseNetwork()
-	n := NewProtocol(config.DefaultConfig().SwarmConfig, net, newTestSigner(t), log.New("tesT", "", ""))
+	n := NewProtocol(config.DefaultConfig().SwarmConfig, net, newTestSigner(t))
 	n.Start()
 
 	var msg service.Message = TestMessage{service.Data_Bytes{newTestSignedMessageData(t, newTestSigner(t))}}
@@ -380,7 +379,7 @@ func TestNeighborhood_Relay3(t *testing.T) {
 
 func TestNeighborhood_Start(t *testing.T) {
 	net := newMockBaseNetwork()
-	n := NewProtocol(config.DefaultConfig().SwarmConfig, net, newTestSigner(t), log.New("tesT", "", ""))
+	n := NewProtocol(config.DefaultConfig().SwarmConfig, net, newTestSigner(t))
 
 	// before Start
 	addPeersAndTest(t, 20, n, net, false)
@@ -392,7 +391,7 @@ func TestNeighborhood_Start(t *testing.T) {
 
 func TestNeighborhood_Close(t *testing.T) {
 	net := newMockBaseNetwork()
-	n := NewProtocol(config.DefaultConfig().SwarmConfig, net, newTestSigner(t), log.New("tesT", "", ""))
+	n := NewProtocol(config.DefaultConfig().SwarmConfig, net, newTestSigner(t))
 
 	n.Start()
 	addPeersAndTest(t, 20, n, net, true)
@@ -403,7 +402,7 @@ func TestNeighborhood_Close(t *testing.T) {
 
 func TestNeighborhood_Disconnect(t *testing.T) {
 	net := newMockBaseNetwork()
-	n := NewProtocol(config.DefaultConfig().SwarmConfig, net, newTestSigner(t), log.New("tesT", "", ""))
+	n := NewProtocol(config.DefaultConfig().SwarmConfig, net, newTestSigner(t))
 
 	n.Start()
 	_, pub1, _ := crypto.GenerateKeyPair()

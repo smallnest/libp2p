@@ -117,7 +117,7 @@ func (s *swarm) waitForGossip() error {
 
 // newSwarm creates a new P2P instance, configured by config, if newNode is true it will create a new node identity
 // and not load from disk. it creates a new `net`, connection pool and dht.
-func newSwarm(ctx context.Context, config config.Config, newNode bool, persist bool) (*swarm, error) {
+func newSwarm(ctx context.Context, config config.Config) (*swarm, error) {
 
 	port := config.TCPPort
 	address := inet.JoinHostPort("0.0.0.0", strconv.Itoa(port))
@@ -126,11 +126,7 @@ func newSwarm(ctx context.Context, config config.Config, newNode bool, persist b
 	var err error
 	// Load an existing identity from file if exists.
 
-	if newNode {
-		l, err = node.NewNodeIdentity(config, address, persist)
-	} else {
-		l, err = node.NewLocalNode(config, address, persist)
-	}
+	l, err = node.NewNodeIdentity(config, address)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a node, err: %v", err)
@@ -166,7 +162,7 @@ func newSwarm(ctx context.Context, config config.Config, newNode bool, persist b
 
 	s.gossip = gossip.NewProtocol(config.SwarmConfig, s, newSignerValidator(s))
 
-	log.Debug("Created swarm for local node %s, %s", l.Address(), l.Pretty())
+	log.Debugf("created swarm for local node %s, %s", l.Address(), l.Pretty())
 
 	return s, nil
 }
@@ -195,7 +191,7 @@ func (s *swarm) Start() error {
 		return errors.New("swarm already running")
 	}
 	atomic.StoreUint32(&s.started, 1)
-	log.Debug("Starting the p2p layer")
+	log.Debug("starting the p2p layer")
 
 	go s.handleNewConnectionEvents()
 
@@ -214,7 +210,7 @@ func (s *swarm) Start() error {
 				return
 			}
 			close(s.bootChan)
-			log.Info("DHT Bootstrapped with %d peers in %v", s.dht.Size(), time.Since(b))
+			log.Infof("DHT bootstrapped with %d peers in %v", s.dht.Size(), time.Since(b))
 		}()
 	}
 
@@ -265,7 +261,7 @@ func (s *swarm) SendMessage(nodeID string, protocol string, payload []byte) erro
 // req.destId: receiver remote node public key/id
 // Local request to send a message to a remote node
 func (s *swarm) sendMessageImpl(peerPubKey string, protocol string, payload service.Data) error {
-	log.Info("Sending message to %v", peerPubKey)
+	log.Infof("sending message to %v", peerPubKey)
 	var err error
 	var peer node.Node
 	var conn net.Connection
@@ -277,13 +273,13 @@ func (s *swarm) sendMessageImpl(peerPubKey string, protocol string, payload serv
 
 	conn, err = s.cPool.GetConnection(peer.Address(), peer.PublicKey()) // blocking, might take some time in case there is no connection
 	if err != nil {
-		log.Warning("failed to send message to %v, no valid connection. err: %v", peer.String(), err)
+		log.Warnf("failed to send message to %v, no valid connection. err: %v", peer.String(), err)
 		return err
 	}
 
 	session := conn.Session()
 	if session == nil {
-		log.Warning("failed to send message to %v, no valid session. err: %v", peer.String(), err)
+		log.Warnf("failed to send message to %v, no valid session. err: %v", peer.String(), err)
 		return err
 	}
 
@@ -331,7 +327,7 @@ func (s *swarm) sendMessageImpl(peerPubKey string, protocol string, payload serv
 	err = conn.Send(final)
 	session.EncryptGuard().Unlock()
 
-	log.Debug("Message sent succesfully")
+	log.Debug("message sent succesfully")
 
 	return err
 }
@@ -366,7 +362,7 @@ func (s *swarm) processMessage(ime net.IncomingMessageEvent) {
 	default:
 		err := s.onRemoteClientMessage(ime)
 		if err != nil {
-			log.Errorf("Err reading message from %v, closing connection err=%v", ime.Conn.RemotePublicKey(), err)
+			log.Errorf("err reading message from %v, closing connection err=%v", ime.Conn.RemotePublicKey(), err)
 			ime.Conn.Close()
 			// TODO: differentiate action on errors
 		}
@@ -441,7 +437,7 @@ Loop:
 			_, err := timesync.CheckSystemClockDrift()
 			if err != nil {
 				checkTimeSync.Stop()
-				log.Error("System time could'nt synchronize %s", err)
+				log.Errorf("system time could'nt synchronize %s", err)
 				s.Shutdown()
 			}
 		}
@@ -480,7 +476,7 @@ func (s *swarm) onRemoteClientMessage(msg net.IncomingMessageEvent) error {
 		return ErrBadFormat1
 	}
 
-	log.Debug(fmt.Sprintf("Handle message from <<  %v", msg.Conn.RemotePublicKey().Pretty()))
+	log.Debugf(fmt.Sprintf("handle message from <<  %v", msg.Conn.RemotePublicKey().Pretty()))
 
 	// protocol messages are encrypted in payload
 	// Locate the session
@@ -498,7 +494,7 @@ func (s *swarm) onRemoteClientMessage(msg net.IncomingMessageEvent) error {
 	pm := &pb.ProtocolMessage{}
 	err = proto.Unmarshal(decPayload, pm)
 	if err != nil {
-		log.Errorf("proto marshinling err=", err)
+		log.Errorf("proto marshinling err= %v", err)
 		return ErrBadFormat2
 	}
 
@@ -524,7 +520,7 @@ func (s *swarm) onRemoteClientMessage(msg net.IncomingMessageEvent) error {
 		return ErrOutOfSync
 	}
 
-	log.Debug("Authorized %v protocol message ", pm.Metadata.NextProtocol)
+	log.Debugf("authorized %v protocol message ", pm.Metadata.NextProtocol)
 
 	remoteNode := node.New(msg.Conn.RemotePublicKey(), "") // if we got so far, we already have the node in our rt, hence address won't be used
 	// update the routing table - we just heard from this authenticated node
@@ -553,7 +549,7 @@ func (s *swarm) ProcessProtocolMessage(sender node.Node, protocol string, data s
 	if msgchan == nil {
 		return ErrNoProtocol
 	}
-	log.Debug("Forwarding message to %v protocol", protocol)
+	log.Debugf("forwarding message to %v protocol", protocol)
 
 	msgchan <- protocolMessage{sender, data}
 
@@ -611,7 +607,7 @@ const NoResultsInterval = 1 * time.Second
 // of connections, if a connection is closed we notify the loop that we need more peers now.
 func (s *swarm) startNeighborhood() error {
 	//TODO: Save and load persistent peers ?
-	log.Info("Neighborhood service started")
+	log.Infof("neighborhood service started")
 
 	// initial request for peers
 	go s.peersLoop()
@@ -646,7 +642,7 @@ func (s *swarm) askForMorePeers() {
 	// todo: better way then going in this everytime ?
 	if len(s.outpeers) >= s.config.SwarmConfig.RandomConnections {
 		s.initOnce.Do(func() {
-			log.Info("gossip; connected to initial required neighbors - %v", len(s.outpeers))
+			log.Infof("gossip; connected to initial required neighbors - %v", len(s.outpeers))
 			close(s.initial)
 			s.outpeersMutex.RLock()
 			log.Debug(spew.Sdump(s.outpeers))
@@ -671,7 +667,7 @@ func (s *swarm) getMorePeers(numpeers int) int {
 	nds := s.dht.SelectPeers(numpeers)
 	ndsLen := len(nds)
 	if ndsLen == 0 {
-		log.Debug("Peer sampler returned nothing.")
+		log.Debug("peer sampler returned nothing.")
 		// this gets busy at start so we spare a second
 		return 0 // zero samples here so no reason to proceed
 	}
@@ -701,7 +697,7 @@ loop:
 			total++ // We count i everytime to know when to close the channel
 
 			if cne.err != nil {
-				log.Debug("can't establish connection with sampled peer %v, %v", cne.n.String(), cne.err)
+				log.Debugf("can't establish connection with sampled peer %v, %v", cne.n.String(), cne.err)
 				bad++
 				if total == ndsLen {
 					break loop
@@ -713,7 +709,7 @@ loop:
 			_, ok := s.inpeers[cne.n.PublicKey().String()]
 			s.inpeersMutex.Unlock()
 			if ok {
-				log.Debug("not allowing peers from inbound to upgrade to outbound to prevent poisoning, peer %v", cne.n.String())
+				log.Debugf("not allowing peers from inbound to upgrade to outbound to prevent poisoning, peer %v", cne.n.String())
 				bad++
 				if total == ndsLen {
 					break loop
@@ -727,7 +723,7 @@ loop:
 			s.outpeersMutex.Unlock()
 
 			s.publishNewPeer(cne.n.PublicKey())
-			log.Debug("Neighborhood: Added peer to peer list %v", cne.n.Pretty())
+			log.Debugf("neighborhood: Added peer to peer list %v", cne.n.Pretty())
 
 			if total == ndsLen {
 				break loop

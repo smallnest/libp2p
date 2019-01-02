@@ -3,12 +3,13 @@ package node
 import (
 	"errors"
 	"fmt"
-	"github.com/smallnest/libp2p/crypto"
-	"github.com/smallnest/libp2p/p2p/config"
 	"math/rand"
 	"net"
 	"testing"
 	"time"
+
+	"github.com/smallnest/libp2p/crypto"
+	"github.com/smallnest/libp2p/p2p/config"
 )
 
 // ErrFailedToCreate is returned when we fail to create a node
@@ -31,15 +32,7 @@ func GenerateTestNodeWithConfig(t *testing.T, config config.Config) (*LocalNode,
 
 	var localNode *LocalNode
 
-	if config.NodeID != "" {
-		localNode, err = NewLocalNode(config, address, false)
-		if err != nil {
-			t.Error(ErrFailedToCreate)
-		}
-		return localNode, Node{localNode.pubKey, address}
-	}
-
-	localNode, err = NewNodeIdentity(config, address, false)
+	localNode, err = NewNodeIdentity(config, address)
 	if err != nil {
 		t.Error(ErrFailedToCreate, err)
 	}

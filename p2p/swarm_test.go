@@ -1,20 +1,18 @@
 package p2p
 
 import (
-	"testing"
-	"time"
-
-	"github.com/smallnest/libp2p/p2p/connectionpool"
-	"github.com/smallnest/libp2p/p2p/dht"
-
 	"context"
 	"errors"
 	"math/rand"
 	"sync"
+	"testing"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/smallnest/libp2p/crypto"
 	"github.com/smallnest/libp2p/p2p/config"
+	"github.com/smallnest/libp2p/p2p/connectionpool"
+	"github.com/smallnest/libp2p/p2p/dht"
 	"github.com/smallnest/libp2p/p2p/message"
 	"github.com/smallnest/libp2p/p2p/net"
 	"github.com/smallnest/libp2p/p2p/node"
@@ -42,7 +40,7 @@ func p2pTestInstance(t testing.TB, config config.Config) *swarm {
 	port, err := node.GetUnboundedPort()
 	assert.NoError(t, err, "Error getting a port", err)
 	config.TCPPort = port
-	p, err := newSwarm(context.TODO(), config, true, true)
+	p, err := newSwarm(context.TODO(), config)
 	assert.NoError(t, err, "Error creating p2p stack, err: %v", err)
 	assert.NotNil(t, p)
 	p.Start()
@@ -53,7 +51,7 @@ func p2pTestNoStart(t testing.TB, config config.Config) *swarm {
 	port, err := node.GetUnboundedPort()
 	assert.NoError(t, err, "Error getting a port", err)
 	config.TCPPort = port
-	p, err := newSwarm(context.TODO(), config, true, true)
+	p, err := newSwarm(context.TODO(), config)
 	assert.NoError(t, err, "Error creating p2p stack, err: %v", err)
 	assert.NotNil(t, p)
 	return p
@@ -74,7 +72,7 @@ func TestNew(t *testing.T) {
 func Test_newSwarm(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.TCPPort = int(crypto.GetRandomUserPort())
-	s, err := newSwarm(context.TODO(), cfg, true, false)
+	s, err := newSwarm(context.TODO(), cfg)
 	assert.NoError(t, err)
 	err = s.Start()
 	assert.NoError(t, err, err)
@@ -85,7 +83,7 @@ func Test_newSwarm(t *testing.T) {
 func TestSwarm_Shutdown(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.TCPPort = int(crypto.GetRandomUserPort())
-	s, err := newSwarm(context.TODO(), cfg, true, false)
+	s, err := newSwarm(context.TODO(), cfg)
 	assert.NoError(t, err)
 	err = s.Start()
 	assert.NoError(t, err, err)
@@ -100,13 +98,13 @@ func TestSwarm_Shutdown(t *testing.T) {
 }
 
 func TestSwarm_ShutdownNoStart(t *testing.T) {
-	s, err := newSwarm(context.TODO(), config.DefaultConfig(), true, false)
+	s, err := newSwarm(context.TODO(), config.DefaultConfig())
 	assert.NoError(t, err)
 	s.Shutdown()
 }
 
 func TestSwarm_RegisterProtocolNoStart(t *testing.T) {
-	s, err := newSwarm(context.TODO(), config.DefaultConfig(), true, false)
+	s, err := newSwarm(context.TODO(), config.DefaultConfig())
 	msgs := s.RegisterProtocol("Anton")
 	assert.NotNil(t, msgs)
 	assert.NoError(t, err)
@@ -363,7 +361,7 @@ func TestSwarm_RegisterProtocol(t *testing.T) {
 
 func TestSwarm_onRemoteClientMessage(t *testing.T) {
 	cfg := config.DefaultConfig()
-	id, err := node.NewNodeIdentity(cfg, "0.0.0.0:0000", false)
+	id, err := node.NewNodeIdentity(cfg, "0.0.0.0:0000")
 	assert.NoError(t, err, "we cant make node ?")
 
 	p := p2pTestNoStart(t, cfg)

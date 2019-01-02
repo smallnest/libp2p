@@ -127,7 +127,7 @@ func (p *MessageServer) handleRequestMessage(sender crypto.PublicKey, headers *s
 		rmsg := &service.Data_MsgWrapper{MsgType: headers.MsgType, ReqID: headers.ReqID, Payload: payload}
 		sendErr := p.network.SendWrappedMessage(sender.String(), p.name, rmsg)
 		if sendErr != nil {
-			log.Error("Error sending response message, err:", sendErr)
+			log.Error("error sending response message, err:", sendErr)
 		}
 	}
 }

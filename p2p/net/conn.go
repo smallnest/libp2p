@@ -162,7 +162,7 @@ func (c *FormattedConnection) Closed() bool {
 }
 
 func (c *FormattedConnection) shutdown(err error) {
-	log.Info("(%v) shutdown. id=%s err=%v", c.remotePub.String(), c.id, err)
+	log.Infof("(%v) shutdown. id=%s err=%v", c.remotePub.String(), c.id, err)
 	c.formatter.Close()
 	c.networker.publishClosingConnection(c)
 }

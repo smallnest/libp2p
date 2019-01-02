@@ -45,7 +45,7 @@ func Test_sumByteArray(t *testing.T) {
 func TestNet_EnqueueMessage(t *testing.T) {
 	testnodes := 100
 	cfg := config.DefaultConfig()
-	ln, err := node.NewNodeIdentity(cfg, "0.0.0.0:0000", false)
+	ln, err := node.NewNodeIdentity(cfg, "0.0.0.0:0000")
 	assert.NoError(t, err)
 	n, err := NewNet(cfg, ln)
 	assert.NoError(t, err)

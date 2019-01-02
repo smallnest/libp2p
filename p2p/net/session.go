@@ -134,7 +134,7 @@ func NewNetworkSession(id, keyE, keyM, pubKey []byte, localNodeID, remoteNodeID 
 	// create and store block enc/dec
 	blockCipher, err := aes.NewCipher(keyE)
 	if err != nil {
-		log.Error("Failed to create block cipher")
+		log.Error("failed to create block cipher")
 		return nil, err
 	}
 
