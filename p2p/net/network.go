@@ -44,7 +44,7 @@ type ManagedConnection interface {
 // Network main client is the swarm
 // Net has no channel events processing loops - clients are responsible for polling these channels and popping events from them
 type Net struct {
-	networkID int8
+	networkID uint32
 	localNode *node.LocalNode
 
 	tcpListener      net.Listener
@@ -109,7 +109,7 @@ func NewNet(conf config.Config, localEntity *node.LocalNode) (*Net, error) {
 }
 
 // NetworkID retuers Net's network ID
-func (n *Net) NetworkID() int8 {
+func (n *Net) NetworkID() uint32 {
 	return n.networkID
 }
 

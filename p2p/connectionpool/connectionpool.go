@@ -19,7 +19,7 @@ type dialResult struct {
 type networker interface {
 	Dial(address string, remotePublicKey crypto.PublicKey) (net.Connection, error) // Connect to a remote node. Can send when no error.
 	SubscribeOnNewRemoteConnections() chan net.NewConnectionEvent
-	NetworkID() int8
+	NetworkID() uint32
 	SubscribeClosingConnections() chan net.Connection
 }
 

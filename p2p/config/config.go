@@ -6,6 +6,11 @@ import (
 	"github.com/smallnest/log"
 )
 
+const (
+	ClientVersion    = "libp2p/0.0.1"
+	MinClientVersion = "0.0.1"
+)
+
 // ConfigValues specifies  default values for node config params.
 var (
 	ConfigValues      = DefaultConfig()

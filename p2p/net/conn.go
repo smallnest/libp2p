@@ -70,7 +70,7 @@ type networker interface {
 	EnqueueMessage(ime IncomingMessageEvent)
 	SubscribeClosingConnections() chan Connection
 	publishClosingConnection(c Connection)
-	NetworkID() int8
+	NetworkID() uint32
 }
 
 type readWriteCloseAddresser interface {
