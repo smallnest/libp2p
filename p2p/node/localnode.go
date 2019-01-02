@@ -39,6 +39,7 @@ func NewNodeIdentity(config config.Config, address string) (*LocalNode, error) {
 		if err != nil {
 			return nil, err
 		}
+		pub = priv.GetPublicKey()
 	}
 
 	return newLocalNodeWithKeys(pub, priv, address, config.NetworkID)
