@@ -245,12 +245,12 @@ func (s *swarm) connectionPool() cPool {
 	return s.cPool
 }
 
-func (s *swarm) sendWrappedMessage(nodeID string, protocol string, payload *service.Data_MsgWrapper) error {
+func (s *swarm) sendWrappedMessage(nodeID string, protocol string, payload *service.DataMsgWrapper) error {
 	return s.sendMessageImpl(nodeID, protocol, payload)
 }
 
 func (s *swarm) SendMessage(nodeID string, protocol string, payload []byte) error {
-	return s.sendMessageImpl(nodeID, protocol, service.Data_Bytes{Payload: payload})
+	return s.sendMessageImpl(nodeID, protocol, service.DataBytes{Payload: payload})
 }
 
 // SendMessage Sends a message to a remote node
@@ -261,7 +261,8 @@ func (s *swarm) SendMessage(nodeID string, protocol string, payload []byte) erro
 // req.destId: receiver remote node public key/id
 // Local request to send a message to a remote node
 func (s *swarm) sendMessageImpl(peerPubKey string, protocol string, payload service.Data) error {
-	log.Infof("sending message to %v", peerPubKey)
+	log.Infof("sending message to %v, data: %v", peerPubKey, payload)
+
 	var err error
 	var peer node.Node
 	var conn net.Connection
@@ -288,9 +289,9 @@ func (s *swarm) sendMessageImpl(peerPubKey string, protocol string, payload serv
 	}
 
 	switch x := payload.(type) {
-	case service.Data_MsgWrapper:
+	case service.DataMsgWrapper:
 		protomessage.Data = &pb.ProtocolMessage_Msg{&pb.MessageWrapper{Type: x.MsgType, Req: x.Req, ReqID: x.ReqID, Payload: x.Payload}}
-	case service.Data_Bytes:
+	case service.DataBytes:
 		protomessage.Data = &pb.ProtocolMessage_Payload{Payload: x.Bytes()}
 	case nil:
 		// The field is not set.
@@ -324,7 +325,7 @@ func (s *swarm) sendMessageImpl(peerPubKey string, protocol string, payload serv
 		return e
 	}
 
-	err = conn.Send(final)
+	conn.Send(final)
 	session.EncryptGuard().Unlock()
 
 	log.Debug("message sent succesfully")
@@ -531,9 +532,9 @@ func (s *swarm) onRemoteClientMessage(msg net.IncomingMessageEvent) error {
 	var data service.Data
 
 	if payload := pm.GetPayload(); payload != nil {
-		data = service.Data_Bytes{Payload: payload}
+		data = service.DataBytes{Payload: payload}
 	} else if wrap := pm.GetMsg(); wrap != nil {
-		data = service.Data_MsgWrapper{Req: wrap.Req, MsgType: wrap.Type, ReqID: wrap.ReqID, Payload: wrap.Payload}
+		data = service.DataMsgWrapper{Req: wrap.Req, MsgType: wrap.Type, ReqID: wrap.ReqID, Payload: wrap.Payload}
 	}
 
 	return s.ProcessProtocolMessage(remoteNode, pm.Metadata.NextProtocol, data)
@@ -699,38 +700,41 @@ loop:
 			if cne.err != nil {
 				log.Debugf("can't establish connection with sampled peer %v, %v", cne.n.String(), cne.err)
 				bad++
-				if total == ndsLen {
-					break loop
-				}
 				continue // this peer didn't work, todo: tell dht
 			}
 
+			pkstr := cne.n.PublicKey().String()
+
 			s.inpeersMutex.Lock()
-			_, ok := s.inpeers[cne.n.PublicKey().String()]
+			_, ok := s.inpeers[pkstr]
 			s.inpeersMutex.Unlock()
 			if ok {
 				log.Debugf("not allowing peers from inbound to upgrade to outbound to prevent poisoning, peer %v", cne.n.String())
 				bad++
-				if total == ndsLen {
-					break loop
-				}
 				continue
 
 			}
 
 			s.outpeersMutex.Lock()
-			s.outpeers[cne.n.PublicKey().String()] = cne.n.PublicKey()
+			if _, ok := s.outpeers[pkstr]; ok {
+				s.outpeersMutex.Unlock()
+				log.Debugf("selected an already outbound peer. not counting that peer.", cne.n.String())
+				bad++
+				continue
+			}
+			s.outpeers[pkstr] = cne.n.PublicKey()
+
 			s.outpeersMutex.Unlock()
 
 			s.publishNewPeer(cne.n.PublicKey())
 			log.Debugf("neighborhood: Added peer to peer list %v", cne.n.Pretty())
-
-			if total == ndsLen {
-				break loop
-			}
 		case <-tm.C:
 			break loop
 		case <-s.shutdown:
+			break loop
+		}
+
+		if total == ndsLen {
 			break loop
 		}
 	}

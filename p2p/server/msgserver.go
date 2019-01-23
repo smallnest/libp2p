@@ -8,20 +8,20 @@ import (
 	"time"
 
 	"github.com/smallnest/libp2p/crypto"
-	"github.com/smallnest/libp2p/p2p/service"
 	"github.com/smallnest/libp2p/log"
+	"github.com/smallnest/libp2p/p2p/service"
 )
 
 type MessageType uint32
 
 type ServerService interface {
 	service.Service
-	SendWrappedMessage(nodeID string, protocol string, payload *service.Data_MsgWrapper) error
+	SendWrappedMessage(nodeID string, protocol string, payload *service.DataMsgWrapper) error
 }
 
 type ServerMessage interface {
 	service.Message
-	Data() *service.Data_MsgWrapper
+	Data() *service.DataMsgWrapper
 }
 
 type Item struct {
@@ -121,10 +121,10 @@ func (p *MessageServer) handleMessage(msg ServerMessage) {
 	}
 }
 
-func (p *MessageServer) handleRequestMessage(sender crypto.PublicKey, headers *service.Data_MsgWrapper) {
+func (p *MessageServer) handleRequestMessage(sender crypto.PublicKey, headers *service.DataMsgWrapper) {
 
 	if payload := p.msgRequestHandlers[MessageType(headers.MsgType)](headers.Payload); payload != nil {
-		rmsg := &service.Data_MsgWrapper{MsgType: headers.MsgType, ReqID: headers.ReqID, Payload: payload}
+		rmsg := &service.DataMsgWrapper{MsgType: headers.MsgType, ReqID: headers.ReqID, Payload: payload}
 		sendErr := p.network.SendWrappedMessage(sender.String(), p.name, rmsg)
 		if sendErr != nil {
 			log.Error("error sending response message, err:", sendErr)
@@ -132,7 +132,7 @@ func (p *MessageServer) handleRequestMessage(sender crypto.PublicKey, headers *s
 	}
 }
 
-func (p *MessageServer) handleResponseMessage(headers *service.Data_MsgWrapper) {
+func (p *MessageServer) handleResponseMessage(headers *service.DataMsgWrapper) {
 
 	//get and remove from pendingMap
 	p.pendMutex.Lock()
@@ -175,7 +175,7 @@ func (p *MessageServer) RegisterMsgHandler(msgType MessageType, reqHandler func(
 func (p *MessageServer) SendAsyncRequest(msgType MessageType, payload []byte, address crypto.PublicKey, resHandler func(msg []byte)) error {
 
 	reqID := p.newRequestId()
-	msg := &service.Data_MsgWrapper{Req: true, ReqID: reqID, MsgType: uint32(msgType), Payload: payload}
+	msg := &service.DataMsgWrapper{Req: true, ReqID: reqID, MsgType: uint32(msgType), Payload: payload}
 	respc := make(chan interface{})
 	p.pendMutex.Lock()
 	p.pendingMap[reqID] = respc
@@ -198,7 +198,7 @@ func (p *MessageServer) newRequestId() uint64 {
 func (p *MessageServer) SendRequest(msgType MessageType, payload []byte, address crypto.PublicKey, timeout time.Duration) (interface{}, error) {
 	reqID := p.newRequestId()
 
-	msg := &service.Data_MsgWrapper{Req: true, ReqID: reqID, MsgType: uint32(msgType), Payload: payload}
+	msg := &service.DataMsgWrapper{Req: true, ReqID: reqID, MsgType: uint32(msgType), Payload: payload}
 	respc := make(chan interface{})
 
 	p.pendMutex.Lock()

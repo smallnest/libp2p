@@ -6,8 +6,8 @@ import (
 	"sync"
 
 	"github.com/smallnest/libp2p/crypto"
-	"github.com/smallnest/libp2p/p2p/node"
 	"github.com/smallnest/libp2p/log"
+	"github.com/smallnest/libp2p/p2p/node"
 )
 
 // TODO : implmement delays?
@@ -118,8 +118,8 @@ type simMessage struct {
 }
 
 // Bytes is the message's binary data in byte array format.
-func (sm simMessage) Data() *Data_MsgWrapper {
-	return sm.msg.(*Data_MsgWrapper)
+func (sm simMessage) Data() *DataMsgWrapper {
+	return sm.msg.(*DataMsgWrapper)
 }
 
 // Bytes is the message's binary data in byte array format.
@@ -152,12 +152,12 @@ func (sn *Node) ProcessProtocolMessage(sender node.Node, protocol string, payloa
 // SendMessage sends a protocol message to the specified nodeID.
 // returns error if the node cant be found. corresponds to `SendMessage`
 
-func (s *Node) SendWrappedMessage(nodeID string, protocol string, payload *Data_MsgWrapper) error {
+func (s *Node) SendWrappedMessage(nodeID string, protocol string, payload *DataMsgWrapper) error {
 	return s.sendMessageImpl(nodeID, protocol, payload)
 }
 
 func (s *Node) SendMessage(nodeID string, protocol string, payload []byte) error {
-	return s.sendMessageImpl(nodeID, protocol, Data_Bytes{Payload: payload})
+	return s.sendMessageImpl(nodeID, protocol, DataBytes{Payload: payload})
 }
 
 func (sn *Node) sendMessageImpl(nodeID string, protocol string, payload Data) error {
@@ -178,7 +178,7 @@ func (sn *Node) Broadcast(protocol string, payload []byte) error {
 	sn.sim.mutex.RLock()
 	for n := range sn.sim.protocolHandler {
 		if c, ok := sn.sim.protocolHandler[n][protocol]; ok {
-			c <- simMessage{Data_Bytes{Payload: payload}, sn.Node}
+			c <- simMessage{DataBytes{Payload: payload}, sn.Node}
 		}
 	}
 	sn.sim.mutex.RUnlock()

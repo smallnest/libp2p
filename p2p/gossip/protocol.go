@@ -8,12 +8,12 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/smallnest/libp2p/crypto"
+	"github.com/smallnest/libp2p/log"
 	"github.com/smallnest/libp2p/p2p/config"
 	"github.com/smallnest/libp2p/p2p/message"
 	"github.com/smallnest/libp2p/p2p/node"
 	"github.com/smallnest/libp2p/p2p/pb"
 	"github.com/smallnest/libp2p/p2p/service"
-	"github.com/smallnest/libp2p/log"
 )
 
 const messageQBufferSize = 100
@@ -56,9 +56,10 @@ type Protocol struct {
 	peers    map[string]*peer
 	shutdown chan struct{}
 
-	oldMessageMu sync.RWMutex
-	oldMessageQ  map[hash]struct{}
-	peersMutex   sync.RWMutex
+	oldMessageMu    sync.RWMutex
+	oldMessageQ     map[hash]struct{}
+	invalidMessageQ map[hash]struct{}
+	peersMutex      sync.RWMutex
 
 	relayQ   chan service.Message
 	messageQ chan protocolMessage
@@ -69,15 +70,16 @@ func NewProtocol(config config.SwarmConfig, base baseNetwork, signer signer) *Pr
 	// intentionally not subscribing to peers events so that the channels won't block in case executing Start delays
 	relayChan := base.RegisterProtocol(ProtocolName)
 	return &Protocol{
-		config:      config,
-		net:         base,
-		signer:      signer,
-		peers:       make(map[string]*peer),
-		shutdown:    make(chan struct{}),
-		oldMessageQ: make(map[hash]struct{}), // todo : remember to drain this
-		peersMutex:  sync.RWMutex{},
-		relayQ:      relayChan,
-		messageQ:    make(chan protocolMessage, messageQBufferSize),
+		config:          config,
+		net:             base,
+		signer:          signer,
+		peers:           make(map[string]*peer),
+		shutdown:        make(chan struct{}),
+		oldMessageQ:     make(map[hash]struct{}), // todo : remember to drain this
+		invalidMessageQ: make(map[hash]struct{}), // todo : remember to drain this
+		peersMutex:      sync.RWMutex{},
+		relayQ:          relayChan,
+		messageQ:        make(chan protocolMessage, messageQBufferSize),
 	}
 }
 
@@ -104,7 +106,7 @@ func newPeer(net sender, pubKey crypto.PublicKey) *peer {
 }
 
 // send sends a gossip message to the peer
-func (p *peer) send(msg []byte, checksum hash) error {
+func (p *peer) send(msg []byte, checksum hash, removePeerCallback func(peer crypto.PublicKey)) error {
 	// don't do anything if this peer know this msg
 	p.msgMutex.RLock()
 	if _, ok := p.knownMessages[checksum]; ok {
@@ -113,6 +115,7 @@ func (p *peer) send(msg []byte, checksum hash) error {
 	}
 	p.msgMutex.RUnlock()
 	go func() {
+		log.Debugf("sending message to peer %v, hash %d", p.pubKey, checksum)
 		err := p.net.SendMessage(p.pubKey.String(), ProtocolName, msg)
 		if err != nil {
 			log.Infof("gossip protocol failed to send msg (calcHash %d) to peer %v, first attempt. err=%v", checksum, p.pubKey, err)
@@ -120,6 +123,7 @@ func (p *peer) send(msg []byte, checksum hash) error {
 			err = p.net.SendMessage(p.pubKey.String(), "", msg)
 			if err != nil {
 				log.Infof("gossip protocol failed to send msg (calcHash %d) to peer %v, second attempt. err=%v", checksum, p.pubKey, err)
+				removePeerCallback(p.pubKey)
 				return
 			}
 		}
@@ -135,10 +139,19 @@ func (prot *Protocol) Close() {
 }
 
 // markMessage adds the calcHash to the old message queue so the message won't be processed in case received again
-func (prot *Protocol) markMessage(h hash) {
+func (prot *Protocol) markMessage(h hash) bool {
 	prot.oldMessageMu.Lock()
-	prot.oldMessageQ[h] = struct{}{}
+	var ok bool
+	if _, ok = prot.oldMessageQ[h]; !ok {
+		prot.oldMessageQ[h] = struct{}{}
+		log.Debugf("marking message as old, hash %v", h)
+	} else {
+		log.Debugf("message is already old, hash %v", h)
+	}
+	log.Debugf("marking message as old, hash %v, is already old %v", h, ok)
 	prot.oldMessageMu.Unlock()
+	return ok
+
 }
 
 func (prot *Protocol) propagateMessage(msg []byte, h hash) {
@@ -146,7 +159,7 @@ func (prot *Protocol) propagateMessage(msg []byte, h hash) {
 	for p := range prot.peers {
 		peer := prot.peers[p]
 		log.Debugf("sending message to peer %v, hash %d", peer.pubKey, h)
-		peer.send(msg, h) // non blocking
+		peer.send(msg, h, prot.removePeer) // non blocking
 	}
 	prot.peersMutex.RUnlock()
 }
@@ -206,7 +219,16 @@ func (prot *Protocol) Broadcast(payload []byte, nextProt string) error {
 
 	// so we won't process our own messages
 	hash := calcHash(finbin)
-	prot.markMessage(hash)
+
+	// every message that we broadcast we also process, unless it is a message that we already processed before
+	isOld := prot.markMessage(hash)
+	if !isOld {
+		err = prot.processMessage(msg)
+		if err != nil {
+			return err
+		}
+	}
+
 	prot.propagateMessage(finbin, hash)
 	return nil
 }
@@ -229,63 +251,74 @@ func (prot *Protocol) removePeer(peer crypto.PublicKey) {
 	prot.peersMutex.Unlock()
 }
 
-func (prot *Protocol) isOldMessage(h hash) bool {
-	var oldmessage bool
-	prot.oldMessageMu.RLock()
-	if _, ok := prot.oldMessageQ[h]; ok {
-		oldmessage = true
-	} else {
-		oldmessage = false
+// marks a hash as old message and check message validity
+func (prot *Protocol) markAndValidateMessage(h hash, msg *pb.ProtocolMessage) (isOldMessage, isInvalid bool) {
+	prot.oldMessageMu.Lock()
+	if _, isOldMessage = prot.oldMessageQ[h]; !isOldMessage {
+		prot.oldMessageQ[h] = struct{}{}
 	}
-	prot.oldMessageMu.RUnlock()
-	return oldmessage
-}
-
-func (prot *Protocol) handleRelayMessage(msgB []byte) error {
-	hash := calcHash(msgB)
-
-	// in case the message was received through the relay channel we need to remove the Gossip layer and hand the payload for the next protocol to process
-	if prot.isOldMessage(hash) {
-		// todo : - have some more metrics for termination
-		// todo	: - maybe tell the peer weg ot this message already?
-		log.Debugf("got old message, hash %d", hash)
-	} else {
-
-		msg := &pb.ProtocolMessage{}
-		err := proto.Unmarshal(msgB, msg)
-		if err != nil {
-			log.Errorf("failed to unmarshal when handling relay message, err %v", err)
-			return err
-		}
-
-		err = prot.validateMessage(msg)
+	if _, isInvalid = prot.invalidMessageQ[h]; !isInvalid && !isOldMessage {
+		err := prot.validateMessage(msg)
 		if err != nil {
 			log.Errorf("failed to validate message when handling relay message, err %v", err)
-			return err
+			isInvalid = true
+			prot.invalidMessageQ[h] = struct{}{}
 		}
+	}
+	prot.oldMessageMu.Unlock()
+	return
+}
 
-		prot.markMessage(hash)
+func (prot *Protocol) processMessage(msg *pb.ProtocolMessage) error {
+	var data service.Data
 
-		var data service.Data
+	if payload := msg.GetPayload(); payload != nil {
+		data = service.DataBytes{Payload: payload}
+	} else if wrap := msg.GetMsg(); wrap != nil {
+		log.Warn("unexpected usage of request-response framework over Gossip - WAS IT IN PURPOSE? ")
+		data = &service.DataMsgWrapper{Req: wrap.Req, MsgType: wrap.Type, ReqID: wrap.ReqID, Payload: wrap.Payload}
+	}
 
-		if payload := msg.GetPayload(); payload != nil {
-			data = service.Data_Bytes{Payload: payload}
-		} else if wrap := msg.GetMsg(); wrap != nil {
-			data = service.Data_MsgWrapper{Req: wrap.Req, MsgType: wrap.Type, ReqID: wrap.ReqID, Payload: wrap.Payload}
-		}
+	authKey, err := crypto.NewPublicKey(msg.Metadata.AuthPubKey)
+	if err != nil {
+		log.Errorf("failed to decode the auth public key when handling relay message, err %v", err)
+		return err
+	}
 
-		authKey, err := crypto.NewPublicKey(msg.Metadata.AuthPubKey)
+	go prot.net.ProcessProtocolMessage(node.New(authKey, ""), msg.Metadata.NextProtocol, data)
+	return nil
+}
+
+func (prot *Protocol) handleRelayMessage(msgB []byte) {
+	hash := calcHash(msgB)
+	msg := &pb.ProtocolMessage{}
+	err := proto.Unmarshal(msgB, msg)
+	if err != nil {
+		log.Errorf("failed to unmarshal when handling relay message, err %v", err)
+		return
+	}
+
+	// in case the message was received through the relay channel we need to remove the Gossip layer and hand the
+	// payload for the next protocol to process
+	isOld, isInvalid := prot.markAndValidateMessage(hash, msg)
+	if isInvalid {
+		// todo : - have some more metrics for termination
+		log.Infof("got invalid message, hash %d, isOld %v", hash, isOld)
+		return // not propagating invalid messages
+	}
+	if isOld {
+		// todo : - have some more metrics for termination
+		// todo	: - maybe tell the peer weg ot this message already?
+		log.Debugf("got old message, hash %d, isInvalid %v", hash, isInvalid)
+
+	} else {
+		err = prot.processMessage(msg)
 		if err != nil {
-			log.Errorf("failed to decode the auth public key when handling relay message, err %v", err)
-			return err
+			return
 		}
-
-		go prot.net.ProcessProtocolMessage(node.New(authKey, ""), msg.Metadata.NextProtocol, data)
 	}
 
 	prot.propagateMessage(msgB, hash)
-
-	return nil
 }
 
 func (prot *Protocol) eventLoop(peerConn chan crypto.PublicKey, peerDisc chan crypto.PublicKey) {
@@ -300,7 +333,6 @@ loop:
 			}
 			// incoming messages from p2p layer for process and relay
 			go func() {
-				//  [todo some err handling
 				prot.handleRelayMessage(msg.Bytes())
 			}()
 		case peer := <-peerConn:
