@@ -30,10 +30,6 @@ var (
 		"3.cn.pool.ntp.org",
 		"0.pool.ntp.org",
 		"1.pool.ntp.org",
-		"time.google.com",
-		"time1.google.com",
-		"time.asia.apple.com",
-		"time.americas.apple.com",
 	}
 	zeroDuration = time.Duration(0)
 	zeroTime     = time.Time{}

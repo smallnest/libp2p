@@ -9,11 +9,11 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/smallnest/libp2p/crypto"
+	"github.com/smallnest/libp2p/log"
 	"github.com/smallnest/libp2p/p2p/config"
 	"github.com/smallnest/libp2p/p2p/delimited"
 	"github.com/smallnest/libp2p/p2p/node"
 	"github.com/smallnest/libp2p/p2p/pb"
-	"github.com/smallnest/libp2p/log"
 )
 
 // DefaultQueueCount is the default number of messages queue we hold. messages queues are used to serialize message receiving
@@ -275,11 +275,22 @@ func (n *Net) acceptTCP() {
 		log.Debug("waiting for incoming connections...")
 		netConn, err := n.tcpListener.Accept()
 		if err != nil {
-
 			if !n.isShuttingDown {
 				log.Error("failed to accept connection request", err)
 				//TODO only print to log and return? The node will continue running without the listener, doesn't sound healthy
 			}
+			if e, ok := err.(*net.OpError); ok {
+				if e.Temporary() || e.Timeout() {
+					continue
+				}
+			}
+			if err.Error() != "use of closed network connection" {
+				continue
+			}
+
+			log.Errorf("failed to accept and exit: %v", err)
+
+			panic(err)
 			return
 		}
 
@@ -290,6 +301,7 @@ func (n *Net) acceptTCP() {
 		go c.beginEventProcessing()
 		// network won't publish the connection before it the remote node had established a session
 	}
+
 }
 
 // SubscribeOnNewRemoteConnections returns new channel where events of new remote connections are reported

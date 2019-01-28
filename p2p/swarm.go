@@ -197,7 +197,7 @@ func (s *swarm) Start() error {
 
 	s.listenToNetworkMessages() // fires up a goroutine for each queue of messages
 
-	go s.checkTimeDrifts()
+	// go s.checkTimeDrifts()
 
 	if s.config.SwarmConfig.Bootstrap {
 		go func() {
@@ -228,6 +228,7 @@ func (s *swarm) Start() error {
 			s.gossipErr = err
 			close(s.gossipC)
 			s.Shutdown()
+			log.Errorf("failed to start neighborhood: %v", err)
 			return
 		}
 		<-s.initial
@@ -261,8 +262,6 @@ func (s *swarm) SendMessage(nodeID string, protocol string, payload []byte) erro
 // req.destId: receiver remote node public key/id
 // Local request to send a message to a remote node
 func (s *swarm) sendMessageImpl(peerPubKey string, protocol string, payload service.Data) error {
-	log.Infof("sending message to %v, data: %v", peerPubKey, payload)
-
 	var err error
 	var peer node.Node
 	var conn net.Connection
